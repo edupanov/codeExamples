@@ -1,0 +1,285 @@
+import React, {Dispatch, SetStateAction, useCallback, useEffect, useState} from 'react';
+import ReactDataGrid from "@inovua/reactdatagrid-enterprise";
+import {tableProps} from "../../../shared/utils/reactDataGrid/tableProps";
+import {TypeCellProps} from "@inovua/reactdatagrid-enterprise/types";
+import {Button} from "@material-ui/core";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import Pagination from "@material-ui/lab/Pagination";
+import {RoutePath} from "../../../router/constants";
+import {useNavigate} from "react-router-dom";
+import {useActions} from "../../../hooks/useActions";
+import {useTypedSelector} from "../../../hooks/useTypedSelector";
+import {useAppDispatch} from "../../../store/store";
+import RequestSender from "../../../shared/services/concrete/requestSender.service";
+import {FiltersValuesInterface} from "./filtres/filters.interface";
+import {StringParam} from 'use-query-params'
+import * as queryString from "querystring";
+import {useLocation} from "react-router";
+import useSearchParams from '../../../hooks/useSearchParams';
+import {CustomColumn} from "../../../types/reactDataGrid/gridConfig.interface.ts";
+import {dateConverter} from "../../../shared/utils/Utils";
+
+interface DeliveryGridProps {
+    modalDataSource?: any
+    deliveryDocsChecked?: any
+    onCellClick?: ((cellProps: TypeCellProps, event: MouseEvent) => void) | undefined
+    setIsDocksChecked?: Dispatch<SetStateAction<boolean | undefined>>
+    isEditButton?: boolean
+    filterValues: FiltersValuesInterface
+}
+
+const DeliveryGrid = (
+    {
+        deliveryDocsChecked,
+        modalDataSource,
+        setIsDocksChecked,
+        isEditButton,
+        filterValues
+    }: DeliveryGridProps) => {
+
+    const navigate = useNavigate()
+    const dispatch = useAppDispatch()
+    const location = useLocation()
+    const {getDeliveryCard, setSupplies, setSuppliesIds} = useActions()
+    const {isSuccess} = useTypedSelector(state => state.deliveryOfGoods)
+    const [dataSource, setDataSource] = useState<any>([])
+    const [pageCurrent, setPageCurrent] = useState(1)
+    const [totalPages, setTotalPages] = useState(0)
+    const [initSearchParams, setInitSearchParams] = useSearchParams('orderBy', StringParam)
+    const [isLoading, setIsLoading] = useState<boolean>(false)
+    const checkedDocks = deliveryDocsChecked ? deliveryDocsChecked : {}
+    const [selectedLeft, setSelectedLeft] = useState<any>(checkedDocks)
+
+    let hasDefaultOrderByValue = location.search.includes('orderBy')
+    let initOrderBy = ''
+    if (hasDefaultOrderByValue) {
+        const queryObject = queryString.parse(location.search)
+        initOrderBy = String(Object.values(queryObject)[0])
+    }
+
+    const DeliveryOfGoodsColumns: CustomColumn[] = [
+        {
+            name: 'edit', header: '', group: 'sku', headerAlign: 'center', width: 65, visible: isEditButton,
+            showColumnMenuTool: false,
+            sortable: false,
+            render: ({data}: any, {cellProps}: any) => {
+                const selectedMap = {
+                    [data.id]: data
+                }
+                return (data.deliveryId && data.statusName === 'Новая' ?
+                        <Button variant="outlined"
+                                onClick={() => {
+                                    localStorage.setItem('deliveryDocsChecked', JSON.stringify(selectedMap));
+                                    localStorage.setItem('editDeliveryCardId', JSON.stringify(data.deliveryId));
+                                    getDeliveryCard(data.deliveryId)
+                                    navigate(RoutePath.deliveryTabs)
+                                }}
+                                key={`editBtn_${data.id}`}
+                                title={'Редактировать'}>
+                            <FontAwesomeIcon icon={'edit'} color={'#7575a3'}/>
+                        </Button>
+                        : null
+                );
+            }
+        },
+        {
+            name: 'documentNumber',
+            header: 'Внутренний номер',
+            textAlign: 'center',
+            headerAlign: 'center',
+            defaultWidth: 160,
+            type: 'string',
+        },
+        {
+            name: 'documentDate',
+            header: 'Дата документа',
+            textAlign: 'center',
+            headerAlign: 'center',
+            defaultWidth: 160,
+            type: 'Date',
+            render: ({data}) => <div>{dateConverter(data.documentDate)}</div>
+
+        },
+        {
+            name: 'shNumber', header: 'Номер SH', textAlign: 'center', headerAlign: 'center', defaultWidth: 200,
+            type: 'string'
+        },
+        {
+            name: 'warehouseName', header: 'Склад', textAlign: 'center', headerAlign: 'center', defaultWidth: 200,
+            type: 'string'
+        },
+        {
+            name: 'statusName',
+            header: 'Статус',
+            textAlign: 'center',
+            headerAlign: 'center',
+            defaultWidth: 200,
+            type: 'string'
+        },
+        {
+            name: 'cargoPlacesCount',
+            header: 'Количество мест',
+            textAlign: 'center',
+            headerAlign: 'center',
+            defaultWidth: 150,
+            type: 'number'
+        },
+        {
+            name: 'deliveryDate',
+            header: 'Дата доставки',
+            textAlign: 'center',
+            headerAlign: 'center',
+            defaultWidth: 200,
+            type: 'Date',
+            render: ({data}) => <div>{dateConverter(data.deliveryDate)}</div>
+
+        },
+        {
+            name: 'deliveryOpening',
+            header: 'Окно доставки',
+            textAlign: 'center',
+            headerAlign: 'center',
+            defaultWidth: 200,
+            type: 'string'
+        },
+        {
+            name: 'vehicleModel',
+            header: 'Транспортное средство',
+            textAlign: 'center',
+            headerAlign: 'center',
+            defaultWidth: 200,
+            type: 'string'
+        },
+        {
+            name: 'vehicleNumber',
+            header: 'Гос. Номер',
+            textAlign: 'center',
+            headerAlign: 'center',
+            defaultWidth: 200,
+            type: 'string'
+        },
+        {
+            name: 'driverName',
+            header: 'Водитель',
+            textAlign: 'center',
+            headerAlign: 'center',
+            defaultWidth: 200,
+            type: 'string'
+        },
+        {name: 'seal', header: 'Пломба', textAlign: 'center', headerAlign: 'center', defaultWidth: 200},
+        {
+            name: 'files',
+            header: 'Файлы',
+            textAlign: 'left',
+            headerAlign: 'center',
+            defaultWidth: 300,
+            showColumnMenuTool: false,
+            render: ({data}: any, {cellProps}: any) => {
+                return <div>
+                    {data.files.map((el: any, i: number) => {
+                        return <div><a target={'_blank'}
+                                       href={`api/logistics/supply/files?fileId=${el.fileId}`}>{el.fileName}</a></div>
+                    })}
+                </div>
+            }
+        },
+    ]
+
+    const onSelectionChangeLeft = useCallback(({selected: selectedMap}) => {
+        //you can select rows only in the status 'Новая'
+        const disableCheck = Object.values(selectedMap).filter((el: any) => {
+            if (el.statusName === 'Новая' && !el.deliveryId) {
+                return el
+            }
+        })
+        const selectedRows = Object.assign({}, ...disableCheck.map((n: any) => ({[n.id]: n})))
+
+        setSelectedLeft(selectedRows)
+        if (setIsDocksChecked) {
+            Object.keys(selectedRows).length ? setIsDocksChecked!(false) : setIsDocksChecked!(true)
+        }
+        setSuppliesIds(Object.keys(selectedRows))
+        setSupplies(Object.values(selectedRows))
+        localStorage.setItem('deliveryDocsChecked', JSON.stringify(selectedRows));
+
+        if (modalDataSource) {
+            setSupplies(Object.values(selectedRows))
+            setSuppliesIds(Object.keys(selectedRows))
+        }
+    }, [])
+
+    const loadData = (page?: number) => {
+        const fullUrl = `api/....../${page ? page : pageCurrent}/take/${10}/?number=${filterValues.number ? filterValues.number : ''}&status=${filterValues.statusId ? filterValues.statusId : ''}${location.search ? '&' + location.search.replace('?', '') : ''}`
+
+        RequestSender.get(fullUrl)
+            .then(async response => {
+                setIsLoading(true)
+                const result = await response.json()
+                if (result.isSuccess) {
+                    setIsLoading(false)
+                    setTotalPages(result.totalPagesCount)
+                    setDataSource(result.data)
+                    localStorage.setItem('gridData', JSON.stringify(result.data));
+                    return result.data
+                }
+            })
+    }
+
+    useEffect(() => {
+        loadData()
+    }, [filterValues, pageCurrent, isSuccess, location.search])
+
+    useEffect(() => {
+        if (filterValues.statusId || filterValues.categoryId) setInitSearchParams(undefined);
+    }, [filterValues, pageCurrent, isSuccess, location.search])
+
+    return (
+        <div style={{width: '100%'}}>           
+            <ReactDataGrid
+                {...tableProps}
+                idProperty="id"
+                style={{minHeight: 400}}
+                columns={DeliveryOfGoodsColumns}
+                dataSource={modalDataSource ? modalDataSource : dataSource}
+                selected={selectedLeft}
+                onSelectionChange={onSelectionChangeLeft}
+                loading={isLoading}
+                checkboxColumn={true}
+                checkboxOnlyRowSelect={true}
+                showColumnMenuTool={false}             
+                rowHeight={null}
+                defaultSortInfo={initOrderBy ? {
+                    dir: initOrderBy.indexOf("ASC") === -1 ? -1 : 1,
+                    id: initOrderBy.split(" ")[0],
+                    name: initOrderBy.split(" ")[0]
+                } : undefined}
+                onSortInfoChange={(sortInfo: any) => {
+                    if (sortInfo) {
+                        setDataSource([])
+                        setInitSearchParams(`${sortInfo.name} ${sortInfo.dir === -1 ? "DESC" : "ASC"}`)
+                    } else {
+                        setDataSource([])
+                        setInitSearchParams(undefined);
+                    }
+                }}
+            />
+            {
+                totalPages! > 0 &&
+                <Pagination count={totalPages}
+                            style={{marginTop: 10}}
+                            size={'medium'}
+                            page={Number(pageCurrent)!}
+                            onChange={(event, page) => {
+                                setPageCurrent!(page)
+                                loadData!(page)
+                            }}
+                            shape="rounded"
+                            className={"PaginationLK"}
+                />
+            }
+        </div>
+
+    );
+};
+
+export default DeliveryGrid;
