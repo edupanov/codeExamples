@@ -1,0 +1,383 @@
+import {
+    CargoPlaceInterface, DeliveryCardInterface, DeliveryCardResponse,
+    DeliveryOfGoodsErrors,
+    DeliveryOpeningsInterface, DocumentInterface,
+    DriverInterface,
+    RejectProps,
+    SelectFilterRequest,
+    VehicleInterface
+} from "../DelivertOfGoods.interface";
+import {AnyAction, createAsyncThunk, createSlice, PayloadAction} from "@reduxjs/toolkit";
+import RequestSender from "../../../shared/services/concrete/requestSender.service";
+import {
+    CATEGORIES,
+    DELIVERY_CARD,
+    DELIVERY_METHODS,
+    DELIVERY_OPENINGS,
+    DRIVERS,
+    PACKING_TYPE,
+    STATUSES,
+    VEHICLE
+} from "./Urls";
+import {showErrorMessage, showSuccessMessage} from "../../../shared/components/snackBar/SnackBar";
+
+
+type DeliveryOfGoodsState = {
+    deliveryOpenings: DeliveryOpeningsInterface
+    statuses: SelectFilterRequest
+    errors: DeliveryOfGoodsErrors
+    isSuccess: boolean
+    packingType: SelectFilterRequest
+    deliveryMethods: SelectFilterRequest
+    categories: SelectFilterRequest
+    deliveryCard: DeliveryCardResponse
+    deliveryOpening: string
+    isLoading: boolean
+}
+
+const initialState: DeliveryOfGoodsState = {
+    deliveryOpenings: <DeliveryOpeningsInterface>{},
+    statuses: <SelectFilterRequest>{},
+    packingType: <SelectFilterRequest>{},
+    deliveryMethods: <SelectFilterRequest>{},
+    categories: <SelectFilterRequest>{},
+    errors: {},
+    isSuccess: false,
+    isLoading: false,
+    deliveryOpening: '',
+    deliveryCard: {
+        data: <DeliveryCardInterface>{},
+        message: '',
+        isSuccess: false,
+        code: 0
+    },
+}
+
+export const getOpenings = createAsyncThunk<DeliveryOpeningsInterface, undefined, { rejectValue: RejectProps }>(
+    'logistics/openings',
+    async (_, {rejectWithValue}) => {
+        const response = await RequestSender.get(DELIVERY_OPENINGS)
+        const result = await response.json()
+        return result.isSuccess
+            ? result
+            : rejectWithValue({message: ''})
+    }
+)
+
+export const getStatuses = createAsyncThunk<SelectFilterRequest, undefined, { rejectValue: RejectProps }>(
+    'logistics/statuses',
+    async (_, {rejectWithValue}) => {
+        const response = await RequestSender.get(STATUSES)
+        const result = await response.json()
+        return result.isSuccess
+            ? result
+            : rejectWithValue({message: ''})
+    }
+)
+
+export const getPackingType = createAsyncThunk<SelectFilterRequest, undefined, { rejectValue: RejectProps }>(
+    'logistics/PackingType',
+    async (_, {rejectWithValue}) => {
+        const response = await RequestSender.get(PACKING_TYPE)
+        const result = await response.json()
+        return result.isSuccess
+            ? result
+            : rejectWithValue({message: ''})
+    }
+)
+
+export const getDeliveryMethods = createAsyncThunk<SelectFilterRequest, undefined, { rejectValue: RejectProps }>(
+    'logistics/DeliveryMethods',
+    async (_, {rejectWithValue}) => {
+        const response = await RequestSender.get(DELIVERY_METHODS)
+        const result = await response.json()
+        return result.isSuccess
+            ? result
+            : rejectWithValue({message: ''})
+    }
+)
+
+export const getCategories = createAsyncThunk<SelectFilterRequest, undefined, { rejectValue: RejectProps }>(
+    'logistics/Categories',
+    async (_, {rejectWithValue}) => {
+        const response = await RequestSender.get(CATEGORIES)
+        const result = await response.json()
+        return result.isSuccess
+            ? result
+            : rejectWithValue({message: ''})
+    }
+)
+
+export const addDeliveryDriver = createAsyncThunk<undefined, DriverInterface, { rejectValue: RejectProps }>(
+    'delivery/add/driver',
+    async (data, {rejectWithValue}) => {
+        const response = await RequestSender.post(DRIVERS, data)
+        const result = await response.json()
+        return result.isSuccess
+            ? result.data
+            : rejectWithValue(result.message)
+    }
+)
+
+export const deleteDeliveryDriver = createAsyncThunk<undefined, number, { rejectValue: RejectProps }>(
+    'delivery/delete/driver',
+    async (data, {rejectWithValue}) => {
+        const response = await RequestSender.delete(`${DRIVERS}/${data}`)
+        const result = await response.json()
+        return result.isSuccess
+            ? result.data
+            : rejectWithValue(result.message)
+    }
+)
+
+export const editDeliveryDriver = createAsyncThunk<undefined, DriverInterface, { rejectValue: RejectProps }>(
+    'delivery/edit/driver',
+    async (data, {rejectWithValue}) => {
+        const response = await RequestSender.put(DRIVERS, data)
+        const result = await response.json()
+        return result.isSuccess
+            ? result.data
+            : rejectWithValue(result.message)
+    }
+)
+
+export const addDeliveryVehicle = createAsyncThunk<undefined, VehicleInterface, { rejectValue: RejectProps }>(
+    'delivery/add/vehicle',
+    async (data, {rejectWithValue}) => {
+        const response = await RequestSender.post(VEHICLE, data)
+        const result = await response.json()
+        return result.isSuccess
+            ? result.data
+            : rejectWithValue(result.message)
+    }
+)
+
+export const deleteDeliveryVehicle = createAsyncThunk<undefined, number, { rejectValue: RejectProps }>(
+    'delivery/delete/vehicle',
+    async (data, {rejectWithValue}) => {
+        const response = await RequestSender.delete(`${VEHICLE}/${data}`)
+        const result = await response.json()
+        return result.isSuccess
+            ? result.data
+            : rejectWithValue(result.message)
+    }
+)
+
+export const editDeliveryVehicle = createAsyncThunk<undefined, VehicleInterface, { rejectValue: RejectProps }>(
+    'delivery/edit/vehicle',
+    async (data, {rejectWithValue}) => {
+        const response = await RequestSender.put(VEHICLE, data)
+        const result = await response.json()
+        return result.isSuccess
+            ? result.data
+            : rejectWithValue(result.message)
+    }
+)
+
+export const getDeliveryCard = createAsyncThunk<DeliveryCardResponse, number, { rejectValue: RejectProps }>(
+    'get/logistics/delivery-card',
+    async (deliveryId, {rejectWithValue}) => {
+        const response = await RequestSender.get(`${DELIVERY_CARD}/${deliveryId}`)
+        const result = await response.json()
+        return result.isSuccess
+            ? result
+            : rejectWithValue({message: result.message})
+    }
+)
+
+export const addDeliveryCard = createAsyncThunk<undefined, DeliveryCardInterface, { rejectValue: RejectProps }>(
+    'logistics/add/delivery-card',
+    async (data, {rejectWithValue}) => {
+        const response = await RequestSender.post(DELIVERY_CARD, data)
+        const result = await response.json()
+        if (result.code === 0) {
+            showSuccessMessage('Карточка доставки оформлена')
+        } else showErrorMessage (result.message)
+
+        if (result.isSuccess)  {
+            return result.data
+        } return rejectWithValue({message: result.message})
+    }
+)
+
+export const editDeliveryCard = createAsyncThunk<undefined, DeliveryCardInterface, { rejectValue: RejectProps }>(
+    'logistics/edit/delivery-card',
+    async (data, {rejectWithValue}) => {
+        const response = await RequestSender.put(DELIVERY_CARD, data)
+        const result = await response.json()
+
+        if (result.code === 0) {
+            showSuccessMessage('Редактирование успешно')
+        } else showErrorMessage (result.message)
+
+        if (result.isSuccess)  {
+            return result.data
+        } return rejectWithValue({message: result.message})
+    }
+)
+
+
+const DeliveryOfGoodsSlice = createSlice({
+    name: 'openings',
+    initialState,
+    reducers: {
+        setError(state, action: PayloadAction<DeliveryOfGoodsErrors>) {
+            state.errors = action.payload
+        },
+        setSuppliesIds(state, action: PayloadAction<Array<string | number>>) {
+            state.deliveryCard.data.suppliesIds = action.payload
+        },
+        setSupplies(state, action: PayloadAction<Array<DocumentInterface>>) {
+            state.deliveryCard.data.supplies = action.payload
+        },
+        setDriverId(state, action: PayloadAction<number>) {
+            state.deliveryCard.data.driverId = action.payload
+        },
+        setVehicleId(state, action: PayloadAction<number>) {
+            state.deliveryCard.data.vehicleId = action.payload
+        },
+        setDriver(state, action: PayloadAction<DriverInterface>) {
+            state.deliveryCard.data.driver = action.payload
+        },
+        setVehicle(state, action: PayloadAction<VehicleInterface>) {
+            state.deliveryCard.data.vehicle = action.payload
+        },
+        setDeliveryDate(state, action: PayloadAction<string>) {
+            state.deliveryCard.data.deliveryDate = action.payload
+        },
+        setDeliveryOpening(state, action: PayloadAction<string>) {
+            state.deliveryCard.data.deliveryOpening = action.payload
+        },
+        setCargoPlaces(state, action: PayloadAction<CargoPlaceInterface[]>) {
+            state.deliveryCard.data.cargoPlaces = action.payload
+        },
+        setSeal(state, action: PayloadAction<string>) {
+            state.deliveryCard.data.seal = action.payload
+        },
+        setDeliveryCard(state, action: PayloadAction<DeliveryCardInterface>) {
+            state.deliveryCard.data = action.payload
+        },
+    },
+
+    extraReducers: (builder) => {
+        builder
+            .addCase(getOpenings.fulfilled, (state, action) => {
+                state.deliveryOpenings = action.payload
+            })
+            .addCase(getStatuses.fulfilled, (state, action) => {
+                state.statuses = action.payload
+            })
+            .addCase(getPackingType.fulfilled, (state, action) => {
+                state.packingType = action.payload
+            })
+            .addCase(getDeliveryMethods.fulfilled, (state, action) => {
+                state.deliveryMethods = action.payload
+            })
+            .addCase(getCategories.fulfilled, (state, action) => {
+                state.categories = action.payload
+            })
+            .addCase(addDeliveryDriver.pending, (state, action) => {
+                state.isSuccess = false
+            })
+            .addCase(addDeliveryDriver.fulfilled, (state, action) => {
+                state.isSuccess = true
+            })
+            .addCase(deleteDeliveryDriver.pending, (state, action) => {
+                state.isSuccess = false
+            })
+            .addCase(deleteDeliveryDriver.fulfilled, (state, action) => {
+                state.isSuccess = true
+            })
+            .addCase(editDeliveryDriver.pending, (state, action) => {
+                state.isSuccess = false
+            })
+            .addCase(editDeliveryDriver.fulfilled, (state, action) => {
+                state.isSuccess = true
+            })
+            .addCase(addDeliveryVehicle.pending, (state, action) => {
+                state.isSuccess = false
+            })
+            .addCase(addDeliveryVehicle.fulfilled, (state, action) => {
+                state.isSuccess = true
+            })
+            .addCase(deleteDeliveryVehicle.pending, (state, action) => {
+                state.isSuccess = false
+            })
+            .addCase(deleteDeliveryVehicle.fulfilled, (state, action) => {
+                state.isSuccess = true
+            })
+            .addCase(editDeliveryVehicle.pending, (state, action) => {
+                state.isSuccess = false
+            })
+            .addCase(editDeliveryVehicle.fulfilled, (state, action) => {
+                state.isSuccess = true
+            })
+            .addCase(addDeliveryCard.pending, (state, action) => {
+                state.isSuccess = false
+                state.isLoading = true
+            })
+            .addCase(addDeliveryCard.fulfilled, (state, action) => {
+                state.isSuccess = true
+                state.isLoading = false
+                state.deliveryCard.data = action.payload!
+            })
+            .addCase(addDeliveryCard.rejected, (state, action) => {
+                state.isSuccess = true
+                state.isLoading = false
+            })
+            .addCase(editDeliveryCard.pending, (state, action) => {
+                state.isSuccess = false
+                state.isLoading = true
+            })
+            .addCase(editDeliveryCard.fulfilled, (state, action) => {
+                state.isSuccess = true
+                state.deliveryCard.data = action.payload!
+                state.isLoading = false
+            })
+            .addCase(editDeliveryCard.rejected, (state, action) => {
+                state.isSuccess = true
+                state.isLoading = false
+            })
+            .addCase(getDeliveryCard.fulfilled, (state, action) => {
+                state.deliveryCard = action.payload
+                state.isLoading = false
+            })
+            .addCase(getDeliveryCard.pending, (state, action) => {
+                state.isLoading = true
+            })
+            .addCase(getDeliveryCard.rejected, (state, action) => {
+                state.isLoading = false
+
+            })
+            .addMatcher(isPending, (state, action: PayloadAction<RejectProps>) => {
+            })
+            .addMatcher(isError, (state, action: PayloadAction<RejectProps>) => {
+                state.errors = {error: action.payload.message}
+            })
+    }
+})
+
+export const {
+    setError,
+    setSuppliesIds,
+    setDriverId,
+    setVehicleId,
+    setDriver,
+    setVehicle,
+    setDeliveryDate,
+    setDeliveryOpening,
+    setCargoPlaces,
+    setSeal,
+    setDeliveryCard,
+    setSupplies 
+} = DeliveryOfGoodsSlice.actions
+
+export default DeliveryOfGoodsSlice.reducer
+
+function isPending(action: AnyAction) {
+    return action.type.endsWith('pending')
+}
+
+function isError(action: AnyAction) {
+    return action.type.endsWith('rejected')
+}
