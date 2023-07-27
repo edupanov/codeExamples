@@ -1,0 +1,130 @@
+<template>
+    <div class="registration">
+        <form>
+            <InputField
+                v-model="form.name"
+                :name="'name'"
+                :placeholder="'Name'"
+                :type="'text'"
+                @change="onInputChange($event, 'name')"
+            />
+            <ErrorInput
+                v-for="(error, index) in errors.name"
+                :key="index"
+                :text="error"
+            />
+            <InputField
+                v-model="form.name"
+                :name="'surname'"
+                :placeholder="'Surname'"
+                :type="'text'"
+                @change="onInputChange($event, 'surname')"
+            />
+            <ErrorInput
+                v-for="(error, index) in errors.surname"
+                :key="index"
+                :text="error"
+            />
+            <InputField
+                v-model="form.email"
+                :name="'email'"
+                :placeholder="'Email'"
+                :type="'email'"
+                @change="onInputChange($event, 'email')"
+            />
+            <ErrorInput
+                v-for="(error, index) in errors.email"
+                :key="index"
+                :text="error"
+            />
+            <InputPhone
+                v-model="form.phone.number"
+                @change="onInputChange($event, 'phone')"
+                @update="updateIsValidPhone"
+            />
+            <ErrorInput
+                v-for="(error, index) in errors.phone"
+                :key="index"
+                :text="error"
+            />
+            <span>I am:</span>
+            <div class="formgroup">
+                <InputRadio
+                    :name="'type'"
+                    :placeholder="'Owner'"
+                    :value="'owner'"
+                />
+                <InputRadio
+                    :name="'type'"
+                    :placeholder="'Rentee'"
+                    :value="'rentee'"
+                />
+            </div>
+
+            <ButtonMain
+                :text="'Next'"
+                :theme="'success'"
+            />
+        </form>
+    </div>
+</template>
+
+<script lang="ts">
+import { defineComponent } from 'vue';
+import InputField from '@ui/Inputs/InputField/InputField.vue';
+import ButtonMain from '@ui/Buttons/ButtonMain/ButtonMain.vue';
+import InputRadio from '@ui/Inputs/InputRadio/InputRadio.vue';
+import InputPhone from '@ui/Inputs/InputPhone/InputPhone.vue';
+import ErrorInput from '@ui/Errors/ErrorInput.vue';
+
+// Mixins
+import { validationMixin } from '@/mixins/validationMixin';
+
+interface ErrorInterface {
+    [key: string]: any
+}
+
+export default defineComponent({
+    name: 'ContactDetailsComponent',
+    components: {
+        InputField,
+        InputRadio,
+        ButtonMain,
+        ErrorInput,
+        InputPhone,
+    },
+    mixins: [validationMixin],
+    data: () => ({
+        form: {
+            name: '',
+            surname: '',
+            email: '',
+            phone: {
+                number: '',
+                isValid: false
+            },
+        },
+        errors: {}
+    }),
+    methods: {
+        onInputChange(event: { target: HTMLInputElement }, inputName: string) {
+            const inputValue = inputName === 'phone' ? this.form.phone : event.target.value;
+            const inputErrors = this.validateField(inputName, inputValue);
+            const errors: ErrorInterface = this.errors;
+            if (inputErrors.length && inputErrors) {
+                errors[inputName] = inputErrors;
+            } else {
+                errors[inputName] = null;
+            }
+        },
+        updateIsValidPhone(event: boolean) {
+            this.form.phone.isValid = event;
+        }
+    },
+
+});
+</script>
+
+<style lang="scss" scoped>
+@import "ContactDetailsComponent";
+</style>
